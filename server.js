@@ -19,17 +19,21 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminRoutes); 
 app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/upload', fileUploadRoutes);
 
 // MongoDB connection
+
+
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+  useUnifiedTopology: true,
+})
+.then(() => console.log('MongoDB connected'))
+.catch(err => console.error('MongoDB connection error:', err));
+
 
 // Multer error handler
 app.use((err, req, res, next) => {
@@ -39,5 +43,5 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
