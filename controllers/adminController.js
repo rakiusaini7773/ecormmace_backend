@@ -9,7 +9,7 @@ async function createDefaultAdmin() {
     const existing = await Admin.findOne({ email: 'admin@site.com' });
     if (!existing) {
       const hashed = await bcrypt.hash('admin123', 10);
-      await Admin.create({ email: 'admin@site.com', password: hashed });
+      await Admin.create({ email: 'admin@site.com', password: hashed, role: 'admin' });
       console.log('✅ Default admin created');
     }
   } catch (error) {
@@ -30,9 +30,9 @@ exports.createAdmin = async (req, res) => {
     if (existing) return res.status(400).json({ message: 'Admin already exists' });
 
     const hashed = await bcrypt.hash(password, 10);
-    const newAdmin = await Admin.create({ email, password: hashed });
+    const newAdmin = await Admin.create({ email, password: hashed, role: 'admin' });
 
-    res.status(201).json({ message: 'Admin created successfully', adminId: newAdmin._id });
+    res.status(201).json({ message: 'Admin created successfully', adminId: newAdmin._id, userRole: newAdmin.role });
   } catch (err) {
     console.error('Create Admin Error:', err.message);
     res.status(500).json({ message: 'Server error' });
@@ -53,11 +53,18 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) return res.status(401).json({ message: 'Incorrect password' });
 
-    const token = jwt.sign({ id: admin._id, role: 'admin' }, process.env.JWT_SECRET, {
-      expiresIn: '1d',
-    });
+    const token = jwt.sign(
+      { id: admin._id, role: admin.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
 
-    res.status(200).json({ token, message: 'Login successful' });
+    res.status(200).json({
+      token,
+      userId: admin._id, // ✅ Add user ID
+      userRole: admin.role,
+      message: 'Login successful'
+    });
   } catch (err) {
     console.error('Login Error:', err.message);
     res.status(500).json({ message: 'Server error' });

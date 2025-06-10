@@ -12,7 +12,17 @@ const fileUploadRoutes = require('./routes/fileUploadRoutes');
 dotenv.config();
 const app = express();
 
-app.use(cors());
+
+app.use(cors({
+  origin: "*", // Adjust this to your frontend URL
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  allowedHeaders: ["Content-Type", "Authorization"],
+  exposedHeaders: ["Content-Disposition"],
+  optionsSuccessStatus: 204,
+  preflightContinue: false,
+  maxAge: 86400, // 24 hours
+  credentials: true,
+}));
 app.use(express.json());
 
 // Serve uploaded files
