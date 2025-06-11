@@ -8,11 +8,18 @@ const {
   toggleCategoryActive
 } = require('../controllers/categoryController');
 
-// Routes
-router.post('/add', auth, createCategory);     
-router.get('/', getAllCategories);              
-router.delete('/:id', auth, deleteCategory);    
-router.put('/:id/toggle', auth, toggleCategoryActive);  
+// Use express-fileupload middleware
+const fileUpload = require('express-fileupload');
+router.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: '/tmp/',
+}));
+
+// Cloudinary-based image upload
+router.post('/add', auth, createCategory);
+
+router.get('/', getAllCategories);
+router.delete('/:id', auth, deleteCategory);
+router.put('/:id/toggle', auth, toggleCategoryActive);
 
 module.exports = router;
- 

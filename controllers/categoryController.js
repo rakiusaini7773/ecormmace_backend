@@ -1,20 +1,44 @@
 const Category = require('../models/Category');
+const cloudinary = require('../config/cloudinary');
+const fs = require('fs');
 
-// POST /api/categories
 exports.createCategory = async (req, res) => {
   try {
-    const { name, iconUrl, active = true } = req.body;
+    const { name, status } = req.body;
 
-    const exists = await Category.findOne({ name });
-    if (exists) return res.status(400).json({ message: 'Category already exists' });
+    if (!req.files || !req.files.image) {
+      return res.status(400).json({ message: 'Image is required' });
+    }
 
-    const category = await Category.create({ name, iconUrl, active });
+    const file = req.files.image;
 
-    res.status(201).json(category);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    // Upload image to Cloudinary
+    const result = await cloudinary.uploader.upload(file.tempFilePath, {
+      folder: 'categories',
+    });
+
+    // Remove temporary file
+    fs.unlinkSync(file.tempFilePath);
+
+    // Save category to DB
+    const category = new Category({
+      name,
+      status,
+      imageUrl: result.secure_url,
+    });
+
+    await category.save();
+
+    res.status(201).json({ message: 'Category created successfully', category });
+  } catch (error) {
+    console.error('Error creating category:', error);
+    res.status(500).json({ message: 'Failed to create category', error: error.message });
   }
 };
+
+
+
+
 
 // GET /api/categories
 exports.getAllCategories = async (req, res) => {
