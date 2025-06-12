@@ -1,9 +1,23 @@
 const mongoose = require('mongoose');
 
 const categorySchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
-  imageUrl: { type: String, required: true }, // Cloudinary image URL
-  status: { type: String, enum: ['active', 'inactive'], default: 'active' }, // status instead of Boolean
+  name: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  status: {
+    type: String,
+    enum: ['Active', 'Inactive'],
+    default: 'Active',
+  },
+  imageUrl: {
+    type: String,
+  },
+  active: {
+    type: Boolean,
+    default: true,
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Category', categorySchema);

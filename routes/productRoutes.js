@@ -1,40 +1,27 @@
+// backend/routes/productRoutes.js
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const { addProduct, getProductsByCategory } = require('../controllers/productController');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const fileUpload = require('express-fileupload');
+const { addProduct, getAllProducts, updateProductStatus, updateProductImage } = require('../controllers/productController');
 
-// Ensure upload directories exist
-['uploads/images', 'uploads/videos', 'uploads/posters'].forEach(dir => {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-});
+// Enable file upload middleware
+router.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: '/tmp/',
+}));
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    if (file.fieldname === 'video') cb(null, 'uploads/videos');
-    else if (file.fieldname === 'poster') cb(null, 'uploads/posters');
-    else cb(null, 'uploads/images');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
+// POST /api/products/add (Admin only)
+router.post('/add', auth, addProduct);
 
-const upload = multer({ storage });
+// Route: Get all products
+router.get('/all', getAllProducts);
 
-router.post(
-  '/add',
-  auth,
-  upload.fields([
-    { name: 'image', maxCount: 1 },
-    { name: 'video', maxCount: 1 },
-    { name: 'poster', maxCount: 1 }
-  ]),
-  addProduct
-);
+// Change status
+router.patch('/:id/status', auth, updateProductStatus);
 
-router.get('/category/:categoryId', auth, getProductsByCategory);
+// Change image
+router.patch('/:id/image', auth, updateProductImage);
+
 
 module.exports = router;
