@@ -9,14 +9,18 @@ async function createDefaultAdmin() {
     const existing = await Admin.findOne({ email: 'admin@site.com' });
     if (!existing) {
       const hashed = await bcrypt.hash('admin123', 10);
-      await Admin.create({ email: 'admin@site.com', password: hashed, role: 'admin' });
+      await Admin.create({
+        email: 'admin@site.com',
+        password: hashed,
+        role: 'admin',
+      });
       console.log('✅ Default admin created');
     }
   } catch (error) {
     console.error('❌ Error creating default admin:', error.message);
   }
 }
-createDefaultAdmin();
+exports.createDefaultAdmin = createDefaultAdmin;
 
 // POST /api/admin/create
 exports.createAdmin = async (req, res) => {
@@ -32,7 +36,11 @@ exports.createAdmin = async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
     const newAdmin = await Admin.create({ email, password: hashed, role: 'admin' });
 
-    res.status(201).json({ message: 'Admin created successfully', adminId: newAdmin._id, userRole: newAdmin.role });
+    res.status(201).json({
+      message: 'Admin created successfully',
+      adminId: newAdmin._id,
+      userRole: newAdmin.role,
+    });
   } catch (err) {
     console.error('Create Admin Error:', err.message);
     res.status(500).json({ message: 'Server error' });
@@ -61,7 +69,7 @@ exports.login = async (req, res) => {
 
     res.status(200).json({
       token,
-      userId: admin._id, // ✅ Add user ID
+      userId: admin._id,
       userRole: admin.role,
       message: 'Login successful'
     });

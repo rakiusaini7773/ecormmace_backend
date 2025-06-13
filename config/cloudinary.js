@@ -1,9 +1,8 @@
-// backend/config/cloudinary.js
 const cloudinaryModule = require('cloudinary');
 const dotenv = require('dotenv');
 dotenv.config();
 
-const cloudinary = cloudinaryModule.v2; // Correct v2 usage
+const cloudinary = cloudinaryModule.v2;
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -11,4 +10,4 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-module.exports = { cloudinary };
+module.exports = cloudinary; // ✅ Correct export
