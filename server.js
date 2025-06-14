@@ -1,59 +1,38 @@
+// app.js
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
-
-// Load env variables
-dotenv.config();
-
-// Import default admin creator
+const fileUpload = require('express-fileupload');
 const { createDefaultAdmin } = require('./controllers/adminController');
 
+dotenv.config();
 const app = express();
 
-// Middleware
-app.use(cors({
-  origin: "*",
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-}));
+app.use(cors());
+app.use(fileUpload({ useTempFiles: true, tempFileDir: '/tmp/' }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Route imports
-const adminRoutes = require('./routes/adminRoutes');
-const categoryRoutes = require('./routes/categoryRoutes');
-const productRoutes = require('./routes/productRoutes');
-const fileUploadRoutes = require('./routes/fileUploadRoutes');
-const bannerRoutes = require('./routes/bannerRoutes');
+// Routes
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/upload', require('./routes/fileUploadRoutes'));
+app.use('/api/banners', require('./routes/bannerRoutes'));
+app.use('/api/blogs', require('./routes/blogRoutes'));
 
-// Route registration
-app.use('/api/admin', adminRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/upload', fileUploadRoutes);
-app.use('/api/banners', bannerRoutes);
+mongoose.connect(process.env.MONGO_URI)
+  .then(async () => {
+    console.log('✅ MongoDB connected');
+    await createDefaultAdmin();
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  })
+  .catch(err => console.error('❌ MongoDB connection error:', err.message));
 
-// MongoDB Connection and server start
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(async () => {
-  console.log('✅ MongoDB connected');
-  await createDefaultAdmin(); // Ensure this runs only after DB is ready
-
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-})
-.catch(err => console.error('❌ MongoDB connection error:', err.message));
-
-// Multer error handler
+// General error handler
 app.use((err, req, res, next) => {
-  if (err.name === 'MulterError' || err.message === 'Unexpected field') {
-    return res.status(400).json({ message: err.message });
-  }
-  next(err);
+  res.status(500).json({ message: err.message || 'Server Error' });
 });
