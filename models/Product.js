@@ -13,8 +13,8 @@ const productSchema = new mongoose.Schema({
     type: String,
     enum: ['Active', 'Inactive'],
   },
-  image: { type: String, required: true },
-  videoUrl: { type: String, required: true },
+  imageUrls: [{ type: String }], // ✅ Allow multiple images
+  videoUrl: { type: String, default: '' }, // ✅ Optional
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
