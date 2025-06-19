@@ -1,22 +1,15 @@
 const express = require('express');
 const router = express.Router();
+const { verifyAdmin } = require('../middleware/auth');
 const bannerController = require('../controllers/bannerController');
-const isAdmin = require('../middleware/auth');
-const fileUpload = require('express-fileupload');
 
-// Middleware to handle file uploads
-router.use(fileUpload({
-  useTempFiles: true,
-  tempFileDir: '/tmp/',
-}));
+// ✅ Admin-only route: Create a banner (with Cloudinary upload)
+router.post('/add', verifyAdmin, bannerController.createBanner);
 
-// Create a banner with Cloudinary upload (no multer)
-router.post('/add', isAdmin, bannerController.createBanner);
-
-// Get all banners
+// ✅ Public route: Get all banners
 router.get('/', bannerController.getAllBanners);
 
-// Update banner status
-router.patch('/:id/status', isAdmin, bannerController.updateBannerStatus);
+// ✅ Admin-only: Update banner status
+router.patch('/:id/status', verifyAdmin, bannerController.updateBannerStatus);
 
 module.exports = router;

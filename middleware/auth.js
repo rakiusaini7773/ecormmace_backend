@@ -1,23 +1,35 @@
 const jwt = require('jsonwebtoken');
 
-module.exports = (req, res, next) => {
+// ✅ Auth for admin-only routes
+exports.verifyAdmin = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
-
-  if (!token) {
-    return res.status(401).json({ message: "No token provided" });
-  }
+  if (!token) return res.status(401).json({ message: "No token provided" });
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
     if (decoded.role !== 'admin') {
       return res.status(403).json({ message: "Access denied. Admins only." });
     }
-
-    req.admin = decoded; // optional: to access admin info later
+    req.admin = decoded;
     next();
-
   } catch (error) {
-    return res.status(403).json({ message: "Invalid token" });
+    res.status(403).json({ message: "Invalid token" });
+  }
+};
+
+// ✅ Auth for user-only routes
+exports.verifyUser = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== 'user') {
+      return res.status(403).json({ message: "Access denied. Users only." });
+    }
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(403).json({ message: "Invalid token" });
   }
 };

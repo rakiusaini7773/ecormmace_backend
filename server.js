@@ -21,7 +21,7 @@ if (!fs.existsSync(tmpDir)) {
 
 // ✅ Middleware - CORS
 app.use(cors({
-  origin: 'https://gold-spider-899026.hostingersite.com/', // 🔒 Replace '*' with your frontend URL in production
+  origin: '*', // 🔒 Replace '*' with your frontend URL in production
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -47,6 +47,7 @@ app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/upload', require('./routes/fileUploadRoutes'));
 app.use('/api/banners', require('./routes/bannerRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
+app.use('/api/user', require('./routes/userRoutes'));
 
 // ✅ MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {

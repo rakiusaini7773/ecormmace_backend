@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
-const fileUpload = require('express-fileupload');
+const { verifyAdmin } = require('../middleware/auth'); // ✅ Use named import
+
 const {
   createCategory,
   getAllCategories,
@@ -9,16 +9,14 @@ const {
   toggleCategoryActive
 } = require('../controllers/categoryController');
 
-// Enable file upload
-router.use(fileUpload({
-  useTempFiles: true,
-  tempFileDir: '/tmp/',
-}));
 
-// Routes
-router.post('/add', auth, createCategory);        // Create category
-router.get('/', getAllCategories);                // Get all categories
-router.delete('/:id', auth, deleteCategory);      // Delete category
-router.put('/:id/toggle', auth, toggleCategoryActive); // Toggle active
+
+// ✅ Admin-only routes
+router.post('/add', verifyAdmin, createCategory);         // Create category
+router.delete('/:id', verifyAdmin, deleteCategory);       // Delete category
+router.put('/:id/toggle', verifyAdmin, toggleCategoryActive); // Toggle active status
+
+// ✅ Public route
+router.get('/', getAllCategories);                        // Get all categories
 
 module.exports = router;

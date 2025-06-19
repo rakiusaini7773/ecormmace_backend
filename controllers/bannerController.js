@@ -6,36 +6,40 @@ exports.createBanner = async (req, res) => {
   try {
     let { title, link, status } = req.body;
 
-    // ✅ Normalize status to match enum (e.g., "Active", "Inactive")
+    // ✅ Normalize status
     if (status) {
       status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
     }
 
+    // ✅ Check if image is attached
     if (!req.files || !req.files.image) {
       return res.status(400).json({ message: 'Image is required' });
     }
 
     const file = req.files.image;
 
+    // ✅ Upload to Cloudinary
     const result = await cloudinary.uploader.upload(file.tempFilePath, {
       folder: 'banners',
-      resource_type: 'image',
+      resource_type: 'image'
     });
 
+    // ✅ Delete temp file
     fs.unlinkSync(file.tempFilePath);
 
+    // ✅ Save to DB
     const banner = new Banner({
       title,
       link,
       status,
-      imageUrl: result.secure_url,
+      imageUrl: result.secure_url
     });
 
     await banner.save();
 
     res.status(201).json({ message: 'Banner created', banner });
   } catch (error) {
-    console.error('Error creating banner:', error);
+    console.error('❌ Error creating banner:', error);
     res.status(500).json({ message: 'Failed to create banner', error: error.message });
   }
 };

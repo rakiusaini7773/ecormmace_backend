@@ -2,6 +2,7 @@ const Admin = require('../models/Admin');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
+const loginHelper = require('../utils/loginHelper');
 
 // Auto-create a default admin
 async function createDefaultAdmin() {
@@ -49,28 +50,15 @@ exports.createAdmin = async (req, res) => {
 
 // POST /api/admin/login
 exports.login = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(422).json({ errors: errors.array() });
-
   const { email, password } = req.body;
 
   try {
-    const admin = await Admin.findOne({ email });
-    if (!admin) return res.status(404).json({ message: 'Admin not found' });
+    const result = await loginHelper(Admin, email, password, 'admin');
 
-    const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) return res.status(401).json({ message: 'Incorrect password' });
-
-    const token = jwt.sign(
-      { id: admin._id, role: admin.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' }
-    );
+    if (result.error) return res.status(401).json({ message: result.error });
 
     res.status(200).json({
-      token,
-      userId: admin._id,
-      userRole: admin.role,
+      ...result,
       message: 'Login successful'
     });
   } catch (err) {

@@ -1,27 +1,23 @@
-// backend/routes/productRoutes.js
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
-const fileUpload = require('express-fileupload');
-const { addProduct, getAllProducts, updateProductStatus, updateProductImage } = require('../controllers/productController');
+const { verifyAdmin } = require('../middleware/auth');
+const {
+  addProduct,
+  getAllProducts,
+  updateProductStatus,
+  updateProductImage
+} = require('../controllers/productController');
 
-// Enable file upload middleware
-router.use(fileUpload({
-  useTempFiles: true,
-  tempFileDir: '/tmp/',
-}));
+// ✅ POST /api/products/add (Admin only)
+router.post('/add', verifyAdmin, addProduct);
 
-// POST /api/products/add (Admin only)
-router.post('/add', auth, addProduct);
-
-// Route: Get all products
+// ✅ GET /api/products/all (Public access)
 router.get('/all', getAllProducts);
 
-// Change status
-router.patch('/:id/status', auth, updateProductStatus);
+// ✅ PATCH /api/products/:id/status (Admin only)
+router.patch('/:id/status', verifyAdmin, updateProductStatus);
 
-// Change image
-router.patch('/:id/image', auth, updateProductImage);
-
+// ✅ PATCH /api/products/:id/image (Admin only)
+router.patch('/:id/image', verifyAdmin, updateProductImage);
 
 module.exports = router;
