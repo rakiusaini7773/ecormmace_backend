@@ -47,6 +47,7 @@ app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/upload', require('./routes/fileUploadRoutes'));
 app.use('/api/banners', require('./routes/bannerRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
+app.use('/api/uploads',require('./routes/uploadRoutes'))
 app.use('/api/user', require('./routes/userRoutes'));
 
 // ✅ MongoDB Connection
