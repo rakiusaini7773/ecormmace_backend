@@ -1,21 +1,37 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { registerUser, loginUser, getUserProfile } = require('../controllers/userController');
-const { verifyUser } = require('../middleware/auth'); // ✅ Correct import
+const {
+  registerUser,
+  loginUser,
+  getUserProfile,
+  getAllUsers
+} = require('../controllers/userController');
+
+const {
+  verifyUser,
+  verifyAdmin,
+  verifyToken
+} = require('../middleware/auth');
 
 const router = express.Router();
 
-// 📝 User Registration
+// 📝 Register
 router.post('/register', [
   body('name').notEmpty().withMessage("Name is required"),
+  body('phonenumber')
+    .matches(/^\d{10}$/)
+    .withMessage('Phone number must be 10 digits'),
   body('email').isEmail().withMessage("Valid email is required"),
   body('password').isLength({ min: 6 }).withMessage("Password must be at least 6 characters")
 ], registerUser);
 
-// 🔐 User Login
+// 🔐 Login
 router.post('/login', loginUser);
 
-// 👤 Get User Profile (Protected)
+// 👤 Profile (User)
 router.get('/profile', verifyUser, getUserProfile);
+
+// 🔐 All users (Admin only)
+router.get('/all', verifyToken, verifyAdmin, getAllUsers);
 
 module.exports = router;

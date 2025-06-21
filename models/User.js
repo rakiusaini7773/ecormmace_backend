@@ -6,6 +6,12 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   profileImage: { type: String, default: '' },
   role: { type: String, default: 'user' },
+  phonenumber: {
+    type: String,
+    required: true,
+    trim: true,
+    match: [/^\d{10}$/, 'Please enter a valid 10-digit phone number'],
+  },
 
   addresses: [
     {

@@ -4,22 +4,22 @@ const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const loginHelper = require('../utils/loginHelper');
 
+// Register User
 const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+  const { name, phonenumber, email, password } = req.body;
 
   try {
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({ message: "Email already exists" });
-    }
+    if (existingUser) return res.status(409).json({ message: "Email already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ name, email, password: hashedPassword });
+    const newUser = new User({ name, phonenumber, email, password: hashedPassword });
     await newUser.save();
 
-    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
+    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
     return res.status(201).json({
       message: "User registered successfully",
@@ -28,13 +28,16 @@ const registerUser = async (req, res) => {
         id: newUser._id,
         name: newUser.name,
         email: newUser.email,
+        phonenumber: newUser.phonenumber,
       },
     });
   } catch (error) {
+    console.error('Register Error:', error.message);
     return res.status(500).json({ message: "Server error" });
   }
 };
 
+// Login User
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -50,6 +53,7 @@ const loginUser = async (req, res) => {
   }
 };
 
+// Get User Profile
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
@@ -59,8 +63,20 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+// Get All Users (Admin only)
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password');
+    res.status(200).json({ success: true, users });
+  } catch (error) {
+    console.error('Error fetching users:', error.message);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
+  getAllUsers,
 };
