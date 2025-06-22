@@ -23,6 +23,9 @@ exports.createCategory = async (req, res) => {
     if (!req.files || !req.files.image) {
       return res.status(400).json({ message: 'Image is required' });
     }
+    console.log('Received body:', req.body);
+console.log('Received files:', req.files);
+
 
     const file = req.files.image;
 
