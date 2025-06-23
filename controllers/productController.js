@@ -2,153 +2,192 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const { cloudinary } = require('../config/cloudinary');
 
-// ✅ Add a new product
-const addProduct = async (req, res) => {
+// @desc    Add a new product
+// @route   POST /api/products/add
+// @access  Admin
+exports.addProduct = async (req, res) => {
   try {
     const {
-      title,
+      heading,
+      subHeading,
+      subDescription,
       description,
       price,
-      tag,
-      subDescription,
-      offerCode,
-      status,
-      category,
       rating,
+      tag,
+      offerCode,
+      videoUrl,
+      category,
+      helpsWith,
+      ingredients,
+      text,
+      offers,
+      usageRestrictions,
+      usageLimits,
+      status
     } = req.body;
 
-    // Basic validation
-    if (!title || !description || !price || !category) {
-      return res.status(400).json({ error: 'Required fields are missing' });
+    if (!heading || !price || !category) {
+      return res.status(400).json({ message: 'Heading, price, and category are required.' });
     }
 
-    // Validate images
-    if (!req.files || !req.files.image) {
-      return res.status(400).json({ error: 'At least one image is required' });
+    const categoryExists = await Category.findOne({ _id: category, status: 'Active' });
+    if (!categoryExists) {
+      return res.status(400).json({ message: 'Category not found or inactive.' });
     }
 
-    // Handle multiple image uploads
-    let imageFiles = req.files.image;
-    if (!Array.isArray(imageFiles)) {
-      imageFiles = [imageFiles]; // single file support
+    if (offerCode) {
+      const existingProduct = await Product.findOne({ offerCode });
+      if (existingProduct) {
+        return res.status(409).json({ message: 'Offer code already exists.' });
+      }
     }
 
-    const imageUrls = [];
-    for (const file of imageFiles) {
-      const uploaded = await cloudinary.uploader.upload(file.tempFilePath, {
-        folder: 'products/images',
-        resource_type: 'image',
-      });
-      imageUrls.push(uploaded.secure_url);
+    let imageUrls = [];
+    if (req.files && req.files.images) {
+      const files = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
+      for (const file of files) {
+        const upload = await cloudinary.uploader.upload(file.tempFilePath, {
+          folder: 'products',
+        });
+        imageUrls.push(upload.secure_url);
+      }
     }
 
-    // Optional video upload
-    let videoUrl = '';
-    if (req.files.video) {
-      const video = req.files.video;
-      const uploadedVideo = await cloudinary.uploader.upload(video.tempFilePath, {
+    let finalVideoUrl = videoUrl;
+    if (req.files && req.files.video) {
+      const videoUpload = await cloudinary.uploader.upload(req.files.video.tempFilePath, {
         folder: 'products/videos',
         resource_type: 'video',
       });
-      videoUrl = uploadedVideo.secure_url;
+      finalVideoUrl = videoUpload.secure_url;
     }
 
-    // Save to database
+    // Safe parsing of inputs
+    const parsedHelpsWith = helpsWith
+      ? (typeof helpsWith === 'string' ? JSON.parse(helpsWith) : helpsWith)
+      : [];
+
+    const parsedIngredients = ingredients
+      ? (typeof ingredients === 'string' ? JSON.parse(ingredients) : ingredients)
+      : [];
+
+    const parsedOffers = offers
+      ? (typeof offers === 'string' ? JSON.parse(offers) : offers)
+      : {};
+
+    const parsedUsageRestrictions = usageRestrictions
+      ? (typeof usageRestrictions === 'string' ? JSON.parse(usageRestrictions) : usageRestrictions)
+      : {};
+
+    const parsedUsageLimits = usageLimits
+      ? (typeof usageLimits === 'string' ? JSON.parse(usageLimits) : usageLimits)
+      : {};
+
+    // Upload helpsWith icons if provided
+    const helpsWithFinal = [];
+    for (let i = 0; i < parsedHelpsWith.length; i++) {
+      let iconUrl = parsedHelpsWith[i].icon || '';
+      const iconField = `helpsWithIcons${i}`;
+      if (req.files && req.files[iconField]) {
+        const iconFile = req.files[iconField];
+        const upload = await cloudinary.uploader.upload(iconFile.tempFilePath, {
+          folder: 'products/icons'
+        });
+        iconUrl = upload.secure_url;
+      }
+      helpsWithFinal.push({ text: parsedHelpsWith[i].text, icon: iconUrl });
+    }
+
     const product = new Product({
-      title,
+      heading,
+      subHeading,
+      subDescription,
       description,
       price,
-      tag,
-      subDescription,
-      offerCode,
-      status,
-      category,
       rating,
+      tag,
+      offerCode,
+      videoUrl: finalVideoUrl,
+      category,
       imageUrls,
-      videoUrl,
+      helpsWith: helpsWithFinal,
+      ingredients: parsedIngredients,
+      text,
+      offers: parsedOffers,
+      usageRestrictions: parsedUsageRestrictions,
+      usageLimits: parsedUsageLimits,
+      status: status || 'Inactive',
     });
 
     await product.save();
-    res.status(201).json({ message: 'Product added successfully', product });
-  } catch (error) {
-    console.error('❌ Add Product Error:', error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
+
+    res.status(201).json({ message: 'Product created successfully', product });
+  } catch (err) {
+    console.error('❌ Add Product Error:', err.message);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
-// ✅ Get all products
-const getAllProducts = async (req, res) => {
+
+// @desc    Get all products
+// @route   GET /api/products
+// @access  Public/Admin
+exports.getAllProducts = async (req, res) => {
   try {
     const products = await Product.find()
-      .populate('category', 'name status')
+      .populate('category', 'name status imageUrl')
       .sort({ createdAt: -1 });
-
-    res.status(200).json({ products });
-  } catch (error) {
-    console.error('❌ Get Products Error:', error);
-    res.status(500).json({ error: 'Failed to fetch products' });
+    res.status(200).json(products);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
-// ✅ Change product status
-const updateProductStatus = async (req, res) => {
+// @desc    Toggle product status
+// @route   PUT /api/products/:id/status
+// @access  Admin
+exports.toggleProductStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const product = await Product.findById(id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    if (!['Active', 'Inactive'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status value' });
-    }
+    product.status = product.status === 'Active' ? 'Inactive' : 'Active';
+    await product.save();
 
-    const product = await Product.findByIdAndUpdate(id, { status }, { new: true });
-
-    if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
-    }
-
-    res.status(200).json({ message: 'Status updated', product });
-  } catch (error) {
-    console.error('❌ Update Status Error:', error);
-    res.status(500).json({ error: 'Failed to update status' });
+    res.status(200).json({ message: 'Product status updated', status: product.status });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
-// ✅ Add image to existing product
-const updateProductImage = async (req, res) => {
+// Update product image (replace all images)
+exports.updateProductImage = async (req, res) => {
   try {
     const { id } = req.params;
+    let imageUrls = [];
 
-    if (!req.files || !req.files.image) {
-      return res.status(400).json({ error: 'Image is required' });
+    if (!req.files || !req.files.images) {
+      return res.status(400).json({ message: 'No image files provided' });
     }
 
-    const imageFile = req.files.image;
+    const files = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
 
-    const uploaded = await cloudinary.uploader.upload(imageFile.tempFilePath, {
-      folder: 'products/images',
-      resource_type: 'image',
-    });
-
-    const product = await Product.findByIdAndUpdate(
-      id,
-      { $push: { imageUrls: uploaded.secure_url } },
-      { new: true }
-    );
-
-    if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
+    for (const file of files) {
+      const upload = await cloudinary.uploader.upload(file.tempFilePath, {
+        folder: 'products',
+      });
+      imageUrls.push(upload.secure_url);
     }
 
-    res.status(200).json({ message: 'Image added successfully', product });
-  } catch (error) {
-    console.error('❌ Update Image Error:', error);
-    res.status(500).json({ error: 'Failed to update product image' });
+    const updated = await Product.findByIdAndUpdate(id, { imageUrls }, { new: true });
+    if (!updated) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.status(200).json({ message: 'Product image(s) updated', data: updated });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
-};
-
-module.exports = {
-  addProduct,
-  getAllProducts,
-  updateProductStatus,
-  updateProductImage,
 };

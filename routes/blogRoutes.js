@@ -6,12 +6,12 @@ const {
   updateBlogImage,
   toggleBlogStatus,
 } = require('../controllers/blogController');
-const { verifyAdmin } = require('../middleware/auth');
+const { verifyAdmin, verifyToken } = require('../middleware/auth');
 
 // Admin-only routes
-router.post('/add', verifyAdmin, addBlog);
-router.put('/:id/image', verifyAdmin, updateBlogImage);
-router.put('/:id/status', verifyAdmin, toggleBlogStatus);
+router.post('/add',verifyToken, verifyAdmin, addBlog);
+router.put('/:id/image',verifyToken, verifyAdmin, updateBlogImage);
+router.put('/:id/status', verifyToken,verifyAdmin, toggleBlogStatus);
 
 // Public route
 router.get('/', getAllBlogs);

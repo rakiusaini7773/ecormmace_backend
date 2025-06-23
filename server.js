@@ -49,6 +49,7 @@ app.use('/api/banners', require('./routes/bannerRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/uploads',require('./routes/uploadRoutes'))
 app.use('/api/user', require('./routes/userRoutes'));
+app.use('/api/offers', require('./routes/offerRoutes'))
 
 // ✅ MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {

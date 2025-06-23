@@ -1,23 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const { verifyAdmin } = require('../middleware/auth');
+const { verifyAdmin, verifyToken } = require('../middleware/auth');
 const {
   addProduct,
   getAllProducts,
-  updateProductStatus,
-  updateProductImage
+  toggleProductStatus, // ✅ Correct name
+  updateProductImage   // ✅ Only if you implemented this
 } = require('../controllers/productController');
 
-// ✅ POST /api/products/add (Admin only)
-router.post('/add', verifyAdmin, addProduct);
+// ✅ Add a new product
+router.post('/add', verifyToken, verifyAdmin, addProduct);
 
-// ✅ GET /api/products/all (Public access)
+// ✅ Get all products
 router.get('/all', getAllProducts);
 
-// ✅ PATCH /api/products/:id/status (Admin only)
-router.patch('/:id/status', verifyAdmin, updateProductStatus);
+// ✅ Toggle product status
+router.patch('/:id/status', verifyToken, verifyAdmin, toggleProductStatus);
 
-// ✅ PATCH /api/products/:id/image (Admin only)
-router.patch('/:id/image', verifyAdmin, updateProductImage);
+// ✅ (Optional) Update image - make sure this exists in controller
+router.patch('/:id/image', verifyToken, verifyAdmin, updateProductImage);
 
 module.exports = router;
