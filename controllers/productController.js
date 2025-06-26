@@ -19,23 +19,27 @@ exports.addProduct = async (req, res) => {
       videoUrl,
       category,
       helpsWith,
-      ingredients,
       text,
+      ingredientText,
+      for: forValue,
       offers,
       usageRestrictions,
       usageLimits,
       status
     } = req.body;
 
+    // Basic validation
     if (!heading || !price || !category) {
       return res.status(400).json({ message: 'Heading, price, and category are required.' });
     }
 
+    // Check if category exists and is active
     const categoryExists = await Category.findOne({ _id: category, status: 'Active' });
     if (!categoryExists) {
       return res.status(400).json({ message: 'Category not found or inactive.' });
     }
 
+    // Check for duplicate offer code
     if (offerCode) {
       const existingProduct = await Product.findOne({ offerCode });
       if (existingProduct) {
@@ -43,9 +47,13 @@ exports.addProduct = async (req, res) => {
       }
     }
 
+    // ✅ Upload product images
     let imageUrls = [];
-    if (req.files && req.files.images) {
-      const files = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
+    if (req.files && req.files.productImages) {
+      const files = Array.isArray(req.files.productImages)
+        ? req.files.productImages
+        : [req.files.productImages];
+
       for (const file of files) {
         const upload = await cloudinary.uploader.upload(file.tempFilePath, {
           folder: 'products',
@@ -54,27 +62,32 @@ exports.addProduct = async (req, res) => {
       }
     }
 
+    // ✅ Upload video
     let finalVideoUrl = videoUrl;
-    if (req.files && req.files.video) {
-      const videoUpload = await cloudinary.uploader.upload(req.files.video.tempFilePath, {
+    if (req.files && req.files.videoUrl) {
+      const videoUpload = await cloudinary.uploader.upload(req.files.videoUrl.tempFilePath, {
         folder: 'products/videos',
         resource_type: 'video',
       });
       finalVideoUrl = videoUpload.secure_url;
     }
 
-    // Safe parsing of inputs
+    // ✅ Parse JSON fields safely
     const parsedHelpsWith = helpsWith
       ? (typeof helpsWith === 'string' ? JSON.parse(helpsWith) : helpsWith)
       : [];
 
-    const parsedIngredients = ingredients
-      ? (typeof ingredients === 'string' ? JSON.parse(ingredients) : ingredients)
-      : [];
+    let parsedOffers = {};
+    if (offers) {
+      parsedOffers = typeof offers === 'string' ? JSON.parse(offers) : offers;
 
-    const parsedOffers = offers
-      ? (typeof offers === 'string' ? JSON.parse(offers) : offers)
-      : {};
+      // Clean invalid enum or empty values
+      if (parsedOffers.discountType === '') delete parsedOffers.discountType;
+      if (parsedOffers.discountValue === '') delete parsedOffers.discountValue;
+      if (parsedOffers.couponType === '') delete parsedOffers.couponType;
+      if (parsedOffers.expiryDate === '') delete parsedOffers.expiryDate;
+      if (parsedOffers.source === '') delete parsedOffers.source;
+    }
 
     const parsedUsageRestrictions = usageRestrictions
       ? (typeof usageRestrictions === 'string' ? JSON.parse(usageRestrictions) : usageRestrictions)
@@ -84,21 +97,24 @@ exports.addProduct = async (req, res) => {
       ? (typeof usageLimits === 'string' ? JSON.parse(usageLimits) : usageLimits)
       : {};
 
-    // Upload helpsWith icons if provided
+    // ✅ Handle helpsWith icon uploads
     const helpsWithFinal = [];
     for (let i = 0; i < parsedHelpsWith.length; i++) {
       let iconUrl = parsedHelpsWith[i].icon || '';
       const iconField = `helpsWithIcons${i}`;
+
       if (req.files && req.files[iconField]) {
         const iconFile = req.files[iconField];
         const upload = await cloudinary.uploader.upload(iconFile.tempFilePath, {
-          folder: 'products/icons'
+          folder: 'products/icons',
         });
         iconUrl = upload.secure_url;
       }
+
       helpsWithFinal.push({ text: parsedHelpsWith[i].text, icon: iconUrl });
     }
 
+    // ✅ Create and save the product
     const product = new Product({
       heading,
       subHeading,
@@ -112,8 +128,9 @@ exports.addProduct = async (req, res) => {
       category,
       imageUrls,
       helpsWith: helpsWithFinal,
-      ingredients: parsedIngredients,
       text,
+      ingredientText,
+      for: forValue,
       offers: parsedOffers,
       usageRestrictions: parsedUsageRestrictions,
       usageLimits: parsedUsageLimits,
@@ -122,12 +139,20 @@ exports.addProduct = async (req, res) => {
 
     await product.save();
 
-    res.status(201).json({ message: 'Product created successfully', product });
+    res.status(201).json({
+      message: 'Product created successfully',
+      product,
+    });
   } catch (err) {
     console.error('❌ Add Product Error:', err.message);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json({
+      message: 'Server error',
+      error: err.message,
+    });
   }
 };
+
+
 
 
 // @desc    Get all products

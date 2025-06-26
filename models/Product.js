@@ -1,32 +1,43 @@
 const mongoose = require('mongoose');
 
-const ingredientSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  type: { type: String, required: true },
-}, { _id: false });
-
+// HelpsWith schema
 const helpsWithSchema = new mongoose.Schema({
   icon: { type: String },
   text: { type: String }
 }, { _id: false });
 
+// ✅ Updated Offer schema with conditional enum validation
 const offerSchema = new mongoose.Schema({
-  discountType: { type: String, enum: ['Flat', 'Percent'] },
+  discountType: {
+    type: String,
+    enum: ['Flat', 'Percentage'],
+    required: false,
+    validate: {
+      validator: function (v) {
+        return !v || ['Flat', 'Percentage'].includes(v);
+      },
+      message: props => `${props.value} is not a valid discount type`
+    }
+  },
   discountValue: { type: Number },
   couponType: { type: String },
-  expiryDate: { type: Date }
+  expiryDate: { type: Date },
+  source: { type: String }
 }, { _id: false });
 
+// Usage Restrictions schema
 const usageRestrictionsSchema = new mongoose.Schema({
   minSpend: Number,
   products: [String]
 }, { _id: false });
 
+// Usage Limits schema
 const usageLimitsSchema = new mongoose.Schema({
   perCoupon: Number,
   perUser: Number
 }, { _id: false });
 
+// Main Product schema
 const productSchema = new mongoose.Schema({
   heading: { type: String, required: true, unique: true },
   subHeading: { type: String },
@@ -48,9 +59,10 @@ const productSchema = new mongoose.Schema({
   usageLimits: usageLimitsSchema,
 
   helpsWith: [helpsWithSchema],
-  ingredients: [ingredientSchema],
 
   text: { type: String },
+  ingredientText: { type: String },
+  for: { type: String },
 
   status: {
     type: String,
@@ -63,7 +75,6 @@ const productSchema = new mongoose.Schema({
     ref: 'Category',
     required: true
   }
-
 }, { timestamps: true });
 
 module.exports = mongoose.model('Product', productSchema);
