@@ -6,7 +6,7 @@ const helpsWithSchema = new mongoose.Schema({
   text: { type: String }
 }, { _id: false });
 
-// ✅ Updated Offer schema with conditional enum validation
+// Offer schema
 const offerSchema = new mongoose.Schema({
   discountType: {
     type: String,
@@ -54,7 +54,6 @@ const productSchema = new mongoose.Schema({
   offerCode: { type: String },
 
   offers: offerSchema,
-
   usageRestrictions: usageRestrictionsSchema,
   usageLimits: usageLimitsSchema,
 

@@ -28,18 +28,15 @@ exports.addProduct = async (req, res) => {
       status
     } = req.body;
 
-    // Basic validation
     if (!heading || !price || !category) {
       return res.status(400).json({ message: 'Heading, price, and category are required.' });
     }
 
-    // Check if category exists and is active
     const categoryExists = await Category.findOne({ _id: category, status: 'Active' });
     if (!categoryExists) {
       return res.status(400).json({ message: 'Category not found or inactive.' });
     }
 
-    // Check for duplicate offer code
     if (offerCode) {
       const existingProduct = await Product.findOne({ offerCode });
       if (existingProduct) {
@@ -47,7 +44,7 @@ exports.addProduct = async (req, res) => {
       }
     }
 
-    // ✅ Upload product images
+    // Upload product images
     let imageUrls = [];
     if (req.files && req.files.productImages) {
       const files = Array.isArray(req.files.productImages)
@@ -62,7 +59,7 @@ exports.addProduct = async (req, res) => {
       }
     }
 
-    // ✅ Upload video
+    // Upload video
     let finalVideoUrl = videoUrl;
     if (req.files && req.files.videoUrl) {
       const videoUpload = await cloudinary.uploader.upload(req.files.videoUrl.tempFilePath, {
@@ -72,7 +69,7 @@ exports.addProduct = async (req, res) => {
       finalVideoUrl = videoUpload.secure_url;
     }
 
-    // ✅ Parse JSON fields safely
+    // Parse JSON fields
     const parsedHelpsWith = helpsWith
       ? (typeof helpsWith === 'string' ? JSON.parse(helpsWith) : helpsWith)
       : [];
@@ -81,7 +78,6 @@ exports.addProduct = async (req, res) => {
     if (offers) {
       parsedOffers = typeof offers === 'string' ? JSON.parse(offers) : offers;
 
-      // Clean invalid enum or empty values
       if (parsedOffers.discountType === '') delete parsedOffers.discountType;
       if (parsedOffers.discountValue === '') delete parsedOffers.discountValue;
       if (parsedOffers.couponType === '') delete parsedOffers.couponType;
@@ -97,7 +93,7 @@ exports.addProduct = async (req, res) => {
       ? (typeof usageLimits === 'string' ? JSON.parse(usageLimits) : usageLimits)
       : {};
 
-    // ✅ Handle helpsWith icon uploads
+    // Handle helpsWith icon uploads
     const helpsWithFinal = [];
     for (let i = 0; i < parsedHelpsWith.length; i++) {
       let iconUrl = parsedHelpsWith[i].icon || '';
@@ -114,7 +110,6 @@ exports.addProduct = async (req, res) => {
       helpsWithFinal.push({ text: parsedHelpsWith[i].text, icon: iconUrl });
     }
 
-    // ✅ Create and save the product
     const product = new Product({
       heading,
       subHeading,
