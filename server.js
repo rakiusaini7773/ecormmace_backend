@@ -50,7 +50,9 @@ app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/uploads',require('./routes/uploadRoutes'))
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/offers', require('./routes/offerRoutes'))
-
+app.get('/', (req, res) => {
+  res.send('API is running');
+});
 // ✅ MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
@@ -82,3 +84,5 @@ app.use((err, req, res, next) => {
 
   res.status(500).json({ error: err.message || 'Server Error' });
 });
+
+
