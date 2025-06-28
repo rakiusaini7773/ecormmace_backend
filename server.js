@@ -63,7 +63,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
   // Create default admin user
   await createDefaultAdmin();
-
+     
   // Start server
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
