@@ -15,7 +15,6 @@ const offerCardSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['Active', 'Inactive'],
-    default: 'Inactive',
   },
 }, { timestamps: true });
 
