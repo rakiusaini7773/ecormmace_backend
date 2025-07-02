@@ -82,13 +82,8 @@ exports.removeItem = async (req, res) => {
       return res.status(404).json({ message: 'Item not found in cart' });
     }
 
-    const item = cart.items[itemIndex];
-
-    if (item.quantity > 1) {
-      item.quantity -= 1;
-    } else {
-      cart.items.splice(itemIndex, 1); // remove item if quantity is 1
-    }
+    // ✅ Always remove the item regardless of quantity
+    cart.items.splice(itemIndex, 1);
 
     await cart.save();
     res.status(200).json(cart);
@@ -96,6 +91,7 @@ exports.removeItem = async (req, res) => {
     res.status(500).json({ message: 'Error removing item', error: err.message });
   }
 };
+
 
 
 exports.clearCart = async (req, res) => {
