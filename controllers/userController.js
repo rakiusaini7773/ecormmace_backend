@@ -74,9 +74,81 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+// ➕ Add new address
+// ➕ Add new address
+const addUserAddress = async (req, res) => {
+  const userId = req.user.id;
+
+  const {
+    firstName,
+    lastName,
+    company,
+    address,        // → addressLine1
+    apartment,      // → addressLine2
+    city,
+    state,          // → province
+    country,
+    zip,            // → zipCode
+    phone,
+    isDefault
+  } = req.body;
+
+  const newAddress = {
+    firstName,
+    lastName,
+    company,
+    addressLine1: address,
+    addressLine2: apartment,
+    city,
+    province: state,
+    country,
+    zipCode: zip,
+    phone,
+    isDefault: isDefault || false
+  };
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Clear previous default if this one is default
+    if (newAddress.isDefault) {
+      user.addresses.forEach((addr) => {
+        addr.isDefault = false;
+      });
+    }
+
+    user.addresses.push(newAddress);
+    await user.save();
+
+    res.status(200).json({
+      message: 'Address added successfully',
+      addresses: user.addresses,
+    });
+  } catch (error) {
+    console.error('Add Address Error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+// 📦 Get all user addresses
+const getUserAddresses = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('addresses');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.status(200).json({ addresses: user.addresses });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
   getAllUsers,
+  addUserAddress,
+  getUserAddresses,
 };

@@ -1,4 +1,19 @@
+// models/User.js
 const mongoose = require('mongoose');
+
+const addressSchema = new mongoose.Schema({
+  firstName: String,
+  lastName: String,
+  company: String,
+  addressLine1: String,
+  addressLine2: String,
+  city: String,
+  province: String,
+  country: String,
+  zipCode: String,
+  phone: String,
+  isDefault: { type: Boolean, default: false }
+});
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -12,29 +27,7 @@ const userSchema = new mongoose.Schema({
     trim: true,
     match: [/^\d{10}$/, 'Please enter a valid 10-digit phone number'],
   },
-
-  addresses: [
-    {
-      type: {
-        type: String,
-        enum: ['Home', 'Work', 'Other'],
-        default: 'Home'
-      },
-      addressLine: String,
-      city: String,
-      state: String,
-      zip: String,
-      country: String
-    }
-  ],
-
-  orderHistory: [
-    {
-      orderId: String,
-      date: Date,
-      totalAmount: Number
-    }
-  ]
+  addresses: [addressSchema],
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

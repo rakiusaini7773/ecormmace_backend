@@ -4,7 +4,9 @@ const {
   registerUser,
   loginUser,
   getUserProfile,
-  getAllUsers
+  getAllUsers,
+  addUserAddress,
+  getUserAddresses
 } = require('../controllers/userController');
 
 const {
@@ -29,9 +31,13 @@ router.post('/register', [
 router.post('/login', loginUser);
 
 // 👤 Profile (User)
-router.get('/profile', verifyUser, getUserProfile);
+router.get('/profile', verifyToken, verifyUser, getUserProfile);
+
 
 // 🔐 All users (Admin only)
 router.get('/all', verifyToken, verifyAdmin, getAllUsers);
+
+router.post('/address', verifyToken, verifyUser, addUserAddress);
+router.get('/address', verifyToken, verifyUser, getUserAddresses);
 
 module.exports = router;
