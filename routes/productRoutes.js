@@ -4,8 +4,10 @@ const { verifyAdmin, verifyToken } = require('../middleware/auth');
 const {
   addProduct,
   getAllProducts,
-  toggleProductStatus, // ✅ Correct name
-  updateProductImage   // ✅ Only if you implemented this
+  toggleProductStatus,
+  updateProductImage,
+  updateProduct,
+  deleteProduct,
 } = require('../controllers/productController');
 
 // ✅ Add a new product
@@ -14,10 +16,16 @@ router.post('/add', verifyToken, verifyAdmin, addProduct);
 // ✅ Get all products
 router.get('/all', getAllProducts);
 
-// ✅ Toggle product status
+// ✅ Toggle product status (Active/Inactive)
 router.patch('/:id/status', verifyToken, verifyAdmin, toggleProductStatus);
 
-// ✅ (Optional) Update image - make sure this exists in controller
+// ✅ Update product images
 router.patch('/:id/image', verifyToken, verifyAdmin, updateProductImage);
+
+// ✅ Update a product
+router.put('/:id', verifyToken, verifyAdmin, updateProduct);
+
+// ✅ Delete a product
+router.delete('/:id', verifyToken, verifyAdmin, deleteProduct);
 
 module.exports = router;
