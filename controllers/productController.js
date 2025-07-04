@@ -364,3 +364,25 @@ exports.deleteProduct = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+
+// @desc    Get a single product by ID
+// @route   GET /api/products/:id
+// @access  Public/Admin
+exports.getSingleProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const product = await Product.findById(id)
+      .populate('category', 'name status imageUrl');
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.status(200).json(product);
+  } catch (err) {
+    console.error('❌ Get Single Product Error:', err.message);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};

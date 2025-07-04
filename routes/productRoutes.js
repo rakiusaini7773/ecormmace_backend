@@ -4,6 +4,7 @@ const { verifyAdmin, verifyToken } = require('../middleware/auth');
 const {
   addProduct,
   getAllProducts,
+  getSingleProduct,       // ✅ Import new controller
   toggleProductStatus,
   updateProductImage,
   updateProduct,
@@ -15,6 +16,9 @@ router.post('/add', verifyToken, verifyAdmin, addProduct);
 
 // ✅ Get all products
 router.get('/all', getAllProducts);
+
+// ✅ Get single product by ID (Public/Admin)
+router.get('/:id', getSingleProduct);
 
 // ✅ Toggle product status (Active/Inactive)
 router.patch('/:id/status', verifyToken, verifyAdmin, toggleProductStatus);
