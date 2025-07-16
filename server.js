@@ -51,6 +51,8 @@ app.use('/api/uploads',require('./routes/uploadRoutes'))
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/offers', require('./routes/offerRoutes'))
 app.use('/api/cart', require('./routes/cartRoutes'))
+app.use('/api/subscriber', require('./routes/subscriberRoutes'));
+
 app.get('/', (req, res) => {
   res.send('API is running');
 });
