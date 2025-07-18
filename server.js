@@ -20,7 +20,6 @@ if (!fs.existsSync(tmpDir)) {
 }
 
 const allowedOrigins = [
-  'http://localhost:3000', // your frontend dev
   '*', 
 ];
 
