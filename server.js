@@ -21,7 +21,7 @@ if (!fs.existsSync(tmpDir)) {
 
 const allowedOrigins = [
   'http://localhost:3000', // your frontend dev
-  'https://api.nourishandthrive.in/', // your production frontend domain
+  '*', 
 ];
 
 app.use(cors({
