@@ -74,10 +74,10 @@ app.use(
     }),
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    },
+      httpOnly: true,                 // Prevents JS access
+      secure: true,                   // Ensures cookies only sent over HTTPS
+      sameSite: 'none',               // Allows cross-origin cookies
+    }
   })
 );
 
