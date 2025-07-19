@@ -7,11 +7,19 @@ const fileUpload = require('express-fileupload');
 const fs = require('fs');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
+const helmet = require('helmet');
+const compression = require('compression');
 const { createDefaultAdmin } = require('./controllers/adminController');
 
 dotenv.config();
 
 const app = express();
+
+// ✅ Security headers
+app.use(helmet());
+
+// ✅ Compression for performance
+app.use(compression());
 
 // ✅ Ensure tmp directory exists
 const tmpDir = path.join(__dirname, 'tmp');
@@ -31,6 +39,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.error(`❌ CORS rejected origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -39,26 +48,26 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// ✅ Middleware - File Upload
-app.use(fileUpload({
-  useTempFiles: true,
-  tempFileDir: tmpDir,
-  limits: { fileSize: 100 * 1024 * 1024 }
-}));
-
-// ✅ Middleware - Body Parser
+// ✅ Body Parser Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Serve Static Files
+// ✅ File Upload Middleware
+app.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: tmpDir,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+}));
+
+// ✅ Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ✅ SESSION Middleware
+// ✅ Session Middleware
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'keyboard cat',
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_URI,
       collectionName: 'sessions',
@@ -66,13 +75,13 @@ app.use(
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // ✅ Only secure in HTTPS
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // ✅ Needed for cross-origin
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     },
   })
 );
 
-// ✅ ROUTES
+// ✅ API Routes
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
@@ -85,32 +94,32 @@ app.use('/api/offers', require('./routes/offerRoutes'));
 app.use('/api/cart', require('./routes/cartRoutes'));
 app.use('/api/subscriber', require('./routes/subscriberRoutes'));
 
+// ✅ Test endpoint
 app.get('/', (req, res) => {
-  res.send('API is running');
+  res.send('API is running...');
 });
 
-// ✅ MONGODB CONNECTION
+// ✅ MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(async () => {
-  console.log('✅ MongoDB connected');
+  .then(async () => {
+    console.log('✅ MongoDB connected');
 
-  // Create default admin
-  await createDefaultAdmin();
+    // Create default admin if not present
+    await createDefaultAdmin();
 
-  // Start server
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err.message);
   });
-})
-.catch(err => {
-  console.error('❌ MongoDB connection error:', err.message);
-});
 
-// ✅ GLOBAL ERROR HANDLER
+// ✅ Global Error Handler
 app.use((err, req, res, next) => {
   console.error('❌ Unhandled error:', err.message);
 
@@ -122,5 +131,5 @@ app.use((err, req, res, next) => {
     return res.status(403).json({ error: 'CORS error: Origin not allowed' });
   }
 
-  res.status(500).json({ error: err.message || 'Server Error' });
+  res.status(500).json({ error: err.message || 'Internal server error' });
 });
