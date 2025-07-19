@@ -5,8 +5,8 @@ const cors = require('cors');
 const path = require('path');
 const fileUpload = require('express-fileupload');
 const fs = require('fs');
-const session = require('express-session'); // ✅ Added
-const MongoStore = require('connect-mongo'); // ✅ Added
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const { createDefaultAdmin } = require('./controllers/adminController');
 
 dotenv.config();
@@ -19,10 +19,13 @@ if (!fs.existsSync(tmpDir)) {
   fs.mkdirSync(tmpDir);
 }
 
+// ✅ Allowed Origins
 const allowedOrigins = [
-  '*', 
+  'http://localhost:3000',
+  'https://elixirbalance.com',
 ];
 
+// ✅ CORS Middleware
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -33,9 +36,8 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-
 
 // ✅ Middleware - File Upload
 app.use(fileUpload({
@@ -51,7 +53,7 @@ app.use(express.urlencoded({ extended: true }));
 // ✅ Serve Static Files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ✅ SESSION MIDDLEWARE SETUP
+// ✅ SESSION Middleware
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'keyboard cat',
@@ -62,14 +64,13 @@ app.use(
       collectionName: 'sessions',
     }),
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24 * 7,
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
       httpOnly: true,
-      secure: false, // ❗ use true only when using HTTPS
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production', // ✅ Only secure in HTTPS
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // ✅ Needed for cross-origin
     },
   })
 );
-
 
 // ✅ ROUTES
 app.use('/api/admin', require('./routes/adminRoutes'));
@@ -111,10 +112,14 @@ mongoose.connect(process.env.MONGO_URI, {
 
 // ✅ GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
-  console.error('❌ Unhandled error:', err);
+  console.error('❌ Unhandled error:', err.message);
 
   if (err.message.includes('Unexpected end of form')) {
     return res.status(400).json({ error: 'File upload failed: unexpected end of form. Please retry.' });
+  }
+
+  if (err.message.includes('CORS')) {
+    return res.status(403).json({ error: 'CORS error: Origin not allowed' });
   }
 
   res.status(500).json({ error: err.message || 'Server Error' });
