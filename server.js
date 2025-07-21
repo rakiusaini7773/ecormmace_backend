@@ -31,6 +31,7 @@ if (!fs.existsSync(tmpDir)) {
 const allowedOrigins = [
   'http://localhost:3000',
   'https://elixirbalance.com',
+  'https://nourishandthrive.in',
 ];
 
 // ✅ CORS Middleware
