@@ -21,27 +21,20 @@ app.use(fileUpload({ useTempFiles: true }));
 app.use(helmet());
 app.use(morgan('dev'));
 
-// CORS setup
-const allowedOrigins = ['https://elixirbalance.com', 'http://localhost:3000'];
+// ✅ CORS setup (supports credentials and dynamic origin)
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
+origin: '*', // allow all origins
+credentials: false // do not allow credentials with wildcard
 }));
 
-// MongoDB connection
+// ✅ MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(() => console.log('MongoDB connected'))
   .catch((err) => console.log(err));
 
-// Session config
+// ✅ Session config
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -49,12 +42,12 @@ app.use(session({
   store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-    sameSite: 'none',
-    secure: process.env.NODE_ENV === 'production'
+    sameSite: 'none',                // Required for cross-site cookies
+    secure: process.env.NODE_ENV === 'production' // Must be true on HTTPS
   }
 }));
 
-// Routes
+// ✅ Routes
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
@@ -63,15 +56,16 @@ app.use('/api/subscribers', require('./routes/subscriberRoutes'));
 app.use('/api/cart', require('./routes/cartRoutes'));
 app.use('/api/offers', require('./routes/offerRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
-// Static files
+
+// ✅ Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Health Check
+// ✅ Health Check
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-// Server
+// ✅ Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
