@@ -14,77 +14,64 @@ const { createDefaultAdmin } = require('./controllers/adminController');
 dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-// ✅ Security headers
-app.use(helmet());
+// Trust proxy (important behind Nginx)
+app.set('trust proxy', 1);
 
-// ✅ Compression for performance
-app.use(compression());
-
-// ✅ Ensure tmp directory exists
+// Ensure tmp directory exists
 const tmpDir = path.join(__dirname, 'tmp');
 if (!fs.existsSync(tmpDir)) {
   fs.mkdirSync(tmpDir);
 }
 
-// ✅ Allowed Origins
-const allowedOrigins = [
-  'http://localhost:3000',
-  'https://elixirbalance.com',
-  'https://nourishandthrive.in',
-];
+// Security headers
+app.use(helmet({ crossOriginResourcePolicy: false }));
 
-// ✅ CORS Middleware
+// Compression
+app.use(compression());
+
+// Strict CORS: only allow frontend domain
+const allowedOrigin = 'https://elixirbalance.com';
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.error(`❌ CORS rejected origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: allowedOrigin,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// ✅ Body Parser Middleware
-app.use(express.json());
+// Body parsers
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ File Upload Middleware
+// File uploads
 app.use(fileUpload({
   useTempFiles: true,
   tempFileDir: tmpDir,
   limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
 }));
 
-// ✅ Serve static files
+// Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ✅ Session Middleware
-app.set("trust proxy", 1); // Required when behind proxy (like nginx)
-app.use(
-  session({
-     name: "sid",
-    secret: process.env.SESSION_SECRET || 'keyboard cat',
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGO_URI,
-      collectionName: 'sessions',
-    }),
-    cookie: {
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-      httpOnly: true,                 // Prevents JS access
-      secure: true,                   // Ensures cookies only sent over HTTPS
-      sameSite: 'none',               // Allows cross-origin cookies
-    }
-  })
-);
+// Session setup with MongoDB store
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'keyboard cat',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_URI,
+    collectionName: 'sessions',
+  }),
+  cookie: {
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: 'none',
+    secure: true,
+    httpOnly: true,
+  }
+}));
 
-// ✅ API Routes
+// API Routes
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
@@ -97,32 +84,35 @@ app.use('/api/offers', require('./routes/offerRoutes'));
 app.use('/api/cart', require('./routes/cartRoutes'));
 app.use('/api/subscriber', require('./routes/subscriberRoutes'));
 
-// ✅ Test endpoint
-app.get('/', (req, res) => {
-  res.send('API is running...');
+// Health check route
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ success: true, message: 'API is running' });
 });
 
-// ✅ MongoDB connection
+// Serve frontend (if needed)
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'client/build')));
+  app.get('*', (_, res) => {
+    res.sendFile(path.join(__dirname, 'client/build/index.html'));
+  });
+}
+
+// MongoDB connection and server start
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-  .then(async () => {
-    console.log('✅ MongoDB connected');
+.then(async () => {
+  console.log('✅ MongoDB connected');
+  await createDefaultAdmin();
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+})
+.catch(err => {
+  console.error('❌ MongoDB connection error:', err.message);
+  process.exit(1);
+});
 
-    // Create default admin if not present
-    await createDefaultAdmin();
-
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
-  })
-  .catch(err => {
-    console.error('❌ MongoDB connection error:', err.message);
-  });
-
-// ✅ Global Error Handler
+// Global error handler
 app.use((err, req, res, next) => {
   console.error('❌ Unhandled error:', err.message);
 
