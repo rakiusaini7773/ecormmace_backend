@@ -63,8 +63,10 @@ app.use(fileUpload({
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ✅ Session Middleware
+app.set("trust proxy", 1); // Required when behind proxy (like nginx)
 app.use(
   session({
+     name: "sid",
     secret: process.env.SESSION_SECRET || 'keyboard cat',
     resave: false,
     saveUninitialized: false,
