@@ -47,7 +47,8 @@ app.use(session({
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
     sameSite: 'lax', // ✅ 'lax' is good for localhost
-    secure: false    // ❌ Only true on HTTPS (e.g., in production)
+    // secure: false,    // ❌ Only true on HTTPS (e.g., in production)
+    secure:"true"
   }
 }));
 
