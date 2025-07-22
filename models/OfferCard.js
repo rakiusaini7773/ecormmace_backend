@@ -12,6 +12,10 @@ const offerCardSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  productQuantity: {
+    type: Number,
+    default: 0,
+  },
   status: {
     type: String,
     enum: ['Active', 'Inactive'],

@@ -1,4 +1,4 @@
-const { cloudinary } = require('../config/cloudinary'); // ✅ Correct import
+const { cloudinary } = require('../config/cloudinary');
 const OfferCard = require('../models/OfferCard');
 
 // ✅ Create Offer Card
@@ -11,23 +11,26 @@ exports.createOffer = async (req, res) => {
       price,
       rating,
       offerCode,
+      productQuantity,
       status,
     } = req.body;
 
+    // Check for required offerCode
     if (!offerCode) {
       return res.status(400).json({ message: 'Offer code is required' });
     }
 
-    // Check for unique offer code
+    // Check for duplicate offer code
     const existing = await OfferCard.findOne({ offerCode });
     if (existing) {
       return res.status(409).json({ message: 'Offer code already exists' });
     }
 
-    // Upload image to Cloudinary
     let productImage = '';
-    if (req.files && req.files.productImage) {
-      const file = req.files.productImage;
+
+    // ✅ Check if image file was uploaded under "image" key
+    if (req.files && req.files.image) {
+      const file = req.files.image;
 
       const upload = await cloudinary.uploader.upload(file.tempFilePath, {
         folder: 'offers',
@@ -36,7 +39,7 @@ exports.createOffer = async (req, res) => {
       productImage = upload.secure_url;
     }
 
-    // Save new offer
+    // ✅ Create new OfferCard
     const newOffer = new OfferCard({
       productImage,
       tag,
@@ -45,6 +48,7 @@ exports.createOffer = async (req, res) => {
       price,
       rating,
       offerCode,
+      productQuantity: productQuantity || 0,
       status: status || 'Inactive',
     });
 
@@ -59,6 +63,8 @@ exports.createOffer = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+    
+
 
 // ✅ Get All Offers
 exports.getAllOffers = async (req, res) => {
