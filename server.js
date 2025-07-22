@@ -8,37 +8,40 @@ const fileUpload = require('express-fileupload');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
-const cookieParser = require('cookie-parser'); // ✅ for manual cookie access
+const cookieParser = require('cookie-parser');
 
-// Load environment variables
+// 🔐 Load environment variables
 dotenv.config();
 
 const app = express();
 
-// ✅ Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(fileUpload({ useTempFiles: true }));
+// ✅ Trust proxy (needed for secure cookies behind nginx/reverse proxy)
+app.set('trust proxy', 1);
+
+// ✅ Middlewares
+app.use(express.json({ limit: '10mb' })); // Limit body to 10 MB
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(fileUpload({ useTempFiles: true, limits: { fileSize: 10 * 1024 * 1024 } })); // 10 MB
 app.use(helmet());
 app.use(morgan('dev'));
-app.use(cookieParser()); // ✅ Use cookie-parser before routes
+app.use(cookieParser());
 
-// ✅ CORS
+// ✅ CORS config
 app.use(cors({
-  origin: 'http://localhost:3000', 
+  origin: (origin, callback) => callback(null, true), // Allow all origins dynamically
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true // ✅ Required for cookies/sessions
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // ✅ MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
+  useUnifiedTopology: true
 }).then(() => console.log('✅ MongoDB connected'))
   .catch((err) => console.error('❌ MongoDB Error:', err));
 
-// ✅ Session config with cookie
+// ✅ Session config
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -46,13 +49,12 @@ app.use(session({
   store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-    sameSite: 'lax', // ✅ 'lax' is good for localhost
-    // secure: false,    // ❌ Only true on HTTPS (e.g., in production)
-    secure:"true"
+    sameSite: 'none',  // ✅ Needed for cross-origin cookies
+    secure: true       // ✅ Must be true if using HTTPS
   }
 }));
 
-// ✅ Routes
+// ✅ API Routes
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
@@ -63,8 +65,9 @@ app.use('/api/cart', require('./routes/cartRoutes'));
 app.use('/api/offers', require('./routes/offerRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/upload', require('./routes/fileUploadRoutes'));
-app.use('/api/uploads',require('./routes/uploadRoutes'))
+app.use('/api/uploads', require('./routes/uploadRoutes'));
 app.use('/api/user', require('./routes/userRoutes'));
+
 // ✅ Static File Serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
