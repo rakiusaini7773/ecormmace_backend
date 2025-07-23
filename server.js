@@ -43,14 +43,17 @@ mongoose.connect(process.env.MONGO_URI, {
 
 // ✅ Session config
 app.use(session({
+  name: 'connect.sid',
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
   cookie: {
+     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
     sameSite: 'none',  // ✅ Needed for cross-origin cookies
-    secure: true       // ✅ Must be true if using HTTPS
+    secure: true ,      // ✅ Must be true if using HTTPS
+    domain: '.nourishandthrive.in'
   }
 }));
 
