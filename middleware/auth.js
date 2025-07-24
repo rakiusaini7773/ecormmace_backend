@@ -1,20 +1,24 @@
 const jwt = require('jsonwebtoken');
 
-// ✅ Generic Token Verification (used before role check)
+// 🔐 Verify JWT and attach user info
 const verifyToken = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) return res.status(401).json({ message: "No token provided" });
-
   try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // 👈 Always attach decoded user to `req.user`
+
+    req.user = decoded; // decoded = { id, role, ... }
     next();
   } catch (error) {
-    res.status(403).json({ message: "Invalid token" });
+    return res.status(403).json({ message: "Invalid or expired token", error: error.message });
   }
 };
 
-// ✅ Admin-Only Access
+// ✅ Role check: Admin only
 const verifyAdmin = (req, res, next) => {
   if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ message: "Access denied. Admins only." });
@@ -22,7 +26,7 @@ const verifyAdmin = (req, res, next) => {
   next();
 };
 
-// ✅ User-Only Access
+// ✅ Role check: User only
 const verifyUser = (req, res, next) => {
   if (!req.user || req.user.role !== 'user') {
     return res.status(403).json({ message: "Access denied. Users only." });
@@ -30,8 +34,14 @@ const verifyUser = (req, res, next) => {
   next();
 };
 
+// ✅ Combined middlewares for routes
+const verifyTokenAndAdmin = [verifyToken, verifyAdmin];
+const verifyTokenAndUser = [verifyToken, verifyUser];
+
 module.exports = {
   verifyToken,
   verifyAdmin,
-  verifyUser
+  verifyUser,
+  verifyTokenAndAdmin,
+  verifyTokenAndUser,
 };
