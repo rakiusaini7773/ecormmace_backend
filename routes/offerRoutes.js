@@ -10,7 +10,7 @@ const {
 
 // ✅ Admin-only routes
 router.post('/add',verifyToken, verifyAdmin, createOffer);            // Add offer card
-router.get('/',verifyToken, verifyAdmin, getAllOffers);               // Get all offer cards
+router.get('/', getAllOffers);               // Get all offer cards
 router.put('/:id/status',verifyToken, verifyAdmin, updateStatus);     // Change status
 
 module.exports = router;
